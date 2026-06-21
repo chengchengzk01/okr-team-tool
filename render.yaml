@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: okr-team-tool
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npm run db:migrate:deploy
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ENABLE_MOCK_LOGIN
+        value: "false"
+      - key: FEISHU_PROVIDER
+        value: real
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: FEISHU_APP_ID
+        sync: false
+      - key: FEISHU_APP_SECRET
+        sync: false
+      - key: FEISHU_REDIRECT_URI
+        sync: false
+      - key: FEISHU_ROOT_DEPARTMENT_ID
+        sync: false
+      - key: FEISHU_CALENDAR_ID
+        sync: false
+      - key: FEISHU_DRIVE_FOLDER_TOKEN
+        sync: false
+      - key: FEISHU_BITABLE_APP_TOKEN
+        sync: false
+      - key: FEISHU_BITABLE_TABLE_IDS_JSON
+        sync: false

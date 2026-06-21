@@ -1,0 +1,372 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  super_admin
+  dept_manager
+  member
+}
+
+enum QuarterStatus {
+  planning
+  active
+  reviewing
+  archived
+}
+
+enum ObjectiveLevel {
+  company
+  department
+  individual
+}
+
+enum Mood {
+  energized
+  steady
+  calm
+  tired
+  need_support
+}
+
+enum HealthLevel {
+  company
+  department
+}
+
+enum ThresholdType {
+  gte
+  lte
+  between
+}
+
+enum HealthStatus {
+  healthy
+  warning
+  exceeded
+}
+
+enum UpdateFrequency {
+  weekly
+  monthly
+  quarterly
+}
+
+enum ExportType {
+  bitable_sync
+  feishu_doc
+  calendar_events
+  v2_report_doc
+}
+
+enum ExportScope {
+  company
+  department
+  individual
+}
+
+enum ExportStatus {
+  pending
+  success
+  failed
+}
+
+model User {
+  id             String   @id @default(uuid())
+  feishuUserId   String   @unique @map("feishu_user_id")
+  name           String
+  avatarUrl      String?  @map("avatar_url")
+  email          String?  @unique
+  role           UserRole @default(member)
+  departmentId   String?  @map("department_id")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  department     Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  managedDepartments Department[] @relation("DepartmentManager")
+  objectives     Objective[]
+  keyResults     KeyResult[]
+  confidenceScores ConfidenceScore[]
+  weeklyCommitments WeeklyCommitment[]
+  weeklyCelebrations WeeklyCelebration[]
+  ownedHealthMetrics HealthMetric[]
+  healthRecords  HealthMetricRecord[]
+  quarterReviews QuarterReview[]
+  exports        ExportLog[]
+
+  @@map("users")
+}
+
+model Department {
+  id            String   @id @default(uuid())
+  feishuDeptId  String?  @unique @map("feishu_dept_id")
+  name          String
+  parentId      String?  @map("parent_id")
+  managerId     String?  @map("manager_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  parent        Department? @relation("DepartmentTree", fields: [parentId], references: [id])
+  children      Department[] @relation("DepartmentTree")
+  manager       User? @relation("DepartmentManager", fields: [managerId], references: [id])
+  members       User[] @relation("DepartmentMembers")
+  objectives    Objective[]
+  healthMetrics HealthMetric[]
+  quarterReviews QuarterReview[]
+  exports       ExportLog[]
+
+  @@map("departments")
+}
+
+model Quarter {
+  id        String        @id @default(uuid())
+  name      String
+  startDate DateTime      @map("start_date") @db.Date
+  endDate   DateTime      @map("end_date") @db.Date
+  status    QuarterStatus
+  createdBy String        @map("created_by")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  objectives Objective[]
+  confidenceScores ConfidenceScore[]
+  weeklyCommitments WeeklyCommitment[]
+  weeklyCelebrations WeeklyCelebration[]
+  quarterReviews QuarterReview[]
+  exports ExportLog[]
+
+  @@map("quarters")
+}
+
+model Objective {
+  id           String         @id @default(uuid())
+  quarterId    String         @map("quarter_id")
+  level        ObjectiveLevel
+  departmentId String?        @map("department_id")
+  ownerId      String         @map("owner_id")
+  title        String         @db.VarChar(50)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  quarter      Quarter        @relation(fields: [quarterId], references: [id])
+  department   Department?    @relation(fields: [departmentId], references: [id])
+  owner        User           @relation(fields: [ownerId], references: [id])
+  keyResults   KeyResult[]
+  childAlignments OKRAlignment[] @relation("ChildObjective")
+
+  @@unique([ownerId, quarterId, level])
+  @@map("objectives")
+}
+
+model KeyResult {
+  id           String   @id @default(uuid())
+  objectiveId  String   @map("objective_id")
+  description  String   @db.VarChar(100)
+  startValue   Float    @map("start_value")
+  targetValue  Float    @map("target_value")
+  currentValue Float    @map("current_value")
+  unit         String?
+  ownerId      String   @map("owner_id")
+  dueDate      DateTime @map("due_date") @db.Date
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  objective    Objective @relation(fields: [objectiveId], references: [id])
+  owner        User      @relation(fields: [ownerId], references: [id])
+  parentAlignments OKRAlignment[] @relation("ParentKeyResult")
+  confidenceScores ConfidenceScore[]
+  reviews KRReview[]
+
+  @@map("key_results")
+}
+
+model OKRAlignment {
+  id                String   @id @default(uuid())
+  childObjectiveId  String   @map("child_objective_id")
+  parentKeyResultId String   @map("parent_key_result_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  childObjective    Objective @relation("ChildObjective", fields: [childObjectiveId], references: [id])
+  parentKeyResult   KeyResult @relation("ParentKeyResult", fields: [parentKeyResultId], references: [id])
+
+  @@unique([childObjectiveId, parentKeyResultId])
+  @@map("okr_alignments")
+}
+
+model ConfidenceScore {
+  id          String   @id @default(uuid())
+  keyResultId String   @map("key_result_id")
+  userId      String   @map("user_id")
+  weekNumber  Int      @map("week_number")
+  quarterId   String   @map("quarter_id")
+  score       Int
+  note        String?
+  isLocked    Boolean  @default(false) @map("is_locked")
+  submittedAt DateTime @map("submitted_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  keyResult   KeyResult @relation(fields: [keyResultId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+  quarter     Quarter   @relation(fields: [quarterId], references: [id])
+
+  @@unique([keyResultId, userId, weekNumber, quarterId])
+  @@map("confidence_scores")
+}
+
+model WeeklyCommitment {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  quarterId       String   @map("quarter_id")
+  weekNumber      Int      @map("week_number")
+  priority1       String   @map("priority_1") @db.VarChar(100)
+  priority2       String   @map("priority_2") @db.VarChar(100)
+  priority3       String   @map("priority_3") @db.VarChar(100)
+  priorSelfReview Json?    @map("prior_self_review")
+  submittedAt     DateTime @map("submitted_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id])
+  quarter         Quarter  @relation(fields: [quarterId], references: [id])
+
+  @@unique([userId, quarterId, weekNumber])
+  @@map("weekly_commitments")
+}
+
+model WeeklyCelebration {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  quarterId   String   @map("quarter_id")
+  weekNumber  Int      @map("week_number")
+  achievements Json
+  obstacles   String?  @db.VarChar(500)
+  mood        Mood
+  submittedAt DateTime @map("submitted_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+  quarter     Quarter  @relation(fields: [quarterId], references: [id])
+
+  @@unique([userId, quarterId, weekNumber])
+  @@map("weekly_celebrations")
+}
+
+model HealthMetric {
+  id              String          @id @default(uuid())
+  name            String
+  description     String?
+  level           HealthLevel
+  departmentId    String?         @map("department_id")
+  ownerId         String          @map("owner_id")
+  thresholdType   ThresholdType   @map("threshold_type")
+  thresholdMin    Float?          @map("threshold_min")
+  thresholdMax    Float?          @map("threshold_max")
+  thresholdValue  Float?          @map("threshold_value")
+  updateFrequency UpdateFrequency @map("update_frequency")
+  isActive        Boolean         @default(true) @map("is_active")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  department      Department?     @relation(fields: [departmentId], references: [id])
+  owner           User            @relation(fields: [ownerId], references: [id])
+  records         HealthMetricRecord[]
+
+  @@map("health_metrics")
+}
+
+model HealthMetricRecord {
+  id             String       @id @default(uuid())
+  healthMetricId String       @map("health_metric_id")
+  currentValue   Float        @map("current_value")
+  status         HealthStatus
+  note           String?
+  recordedBy     String       @map("recorded_by")
+  recordedAt     DateTime     @map("recorded_at")
+
+  healthMetric   HealthMetric @relation(fields: [healthMetricId], references: [id])
+  recorder       User         @relation(fields: [recordedBy], references: [id])
+
+  @@map("health_metric_records")
+}
+
+model QuarterReview {
+  id                  String         @id @default(uuid())
+  quarterId           String         @map("quarter_id")
+  level               ObjectiveLevel
+  ownerId             String         @map("owner_id")
+  departmentId        String?        @map("department_id")
+  whatWorked          String?        @map("what_worked")
+  whatDidnt           String?        @map("what_didnt")
+  healthSummary       String?        @map("health_summary")
+  nextQuarterInsights String?        @map("next_quarter_insights")
+  submittedAt         DateTime?      @map("submitted_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  quarter             Quarter        @relation(fields: [quarterId], references: [id])
+  owner               User           @relation(fields: [ownerId], references: [id])
+  department          Department?    @relation(fields: [departmentId], references: [id])
+  krReviews           KRReview[]
+
+  @@map("quarter_reviews")
+}
+
+model KRReview {
+  id              String        @id @default(uuid())
+  keyResultId     String        @map("key_result_id")
+  quarterReviewId String        @map("quarter_review_id")
+  finalValue      Float         @map("final_value")
+  completionRate  Float         @map("completion_rate")
+  note            String
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  keyResult       KeyResult     @relation(fields: [keyResultId], references: [id])
+  quarterReview   QuarterReview @relation(fields: [quarterReviewId], references: [id])
+
+  @@map("kr_reviews")
+}
+
+model ExportLog {
+  id           String       @id @default(uuid())
+  exportedBy   String       @map("exported_by")
+  exportType   ExportType   @map("export_type")
+  scope        ExportScope
+  departmentId String?      @map("department_id")
+  quarterId    String?      @map("quarter_id")
+  status       ExportStatus
+  feishuDocUrl String?      @map("feishu_doc_url")
+  message      String?
+  exportedAt   DateTime     @map("exported_at")
+
+  user         User         @relation(fields: [exportedBy], references: [id])
+  department   Department?  @relation(fields: [departmentId], references: [id])
+  quarter      Quarter?     @relation(fields: [quarterId], references: [id])
+
+  @@map("export_logs")
+}
+
+model FeishuIntegrationConfig {
+  id                    String   @id @default("default")
+  provider              String   @default("mock")
+  appId                 String?  @map("app_id")
+  appSecret             String?  @map("app_secret")
+  redirectUri           String?  @map("redirect_uri")
+  rootDepartmentId      String?  @map("root_department_id")
+  calendarId            String?  @map("calendar_id")
+  calendarEventIds      Json?    @map("calendar_event_ids")
+  calendarSettings      Json?    @map("calendar_settings")
+  bitableAppToken       String?  @map("bitable_app_token")
+  bitableTableIds       Json?    @map("bitable_table_ids")
+  driveFolderToken      String?  @map("drive_folder_token")
+  updatedBy             String?  @map("updated_by")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("feishu_integration_configs")
+}

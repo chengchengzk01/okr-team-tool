@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "outDir": "/private/tmp/okr-seed-build",
+    "jsx": "react-jsx",
+    "isolatedModules": false
+  },
+  "include": [
+    "prisma/seed.ts",
+    "scripts/check-persistence.ts",
+    "lib/mock/seed.ts",
+    "lib/domain/types.ts",
+    "lib/domain/rules.ts",
+    "lib/data/repository.ts",
+    "lib/data/prisma-persistence.ts"
+  ]
+}
