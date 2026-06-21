@@ -27,18 +27,24 @@ export async function GET() {
 async function getDatabaseHealth() {
   try {
     await prisma.$queryRaw`SELECT 1`;
+    try {
+      const [users, quarters, objectives, keyResults] = await Promise.all([
+        prisma.user.count(),
+        prisma.quarter.count(),
+        prisma.objective.count(),
+        prisma.keyResult.count()
+      ]);
 
-    const [users, quarters, objectives, keyResults] = await Promise.all([
-      prisma.user.count(),
-      prisma.quarter.count(),
-      prisma.objective.count(),
-      prisma.keyResult.count()
-    ]);
-
-    return {
-      ok: true,
-      counts: { users, quarters, objectives, keyResults }
-    };
+      return {
+        ok: true,
+        counts: { users, quarters, objectives, keyResults }
+      };
+    } catch (error) {
+      return {
+        ok: true,
+        warning: error instanceof Error ? error.message : "Database counts unavailable"
+      };
+    }
   } catch (error) {
     return {
       ok: false,
