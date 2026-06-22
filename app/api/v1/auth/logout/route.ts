@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveRequestAppOrigin } from "@/lib/app-url";
 import { clearSessionCookie } from "@/lib/auth";
 
 export async function GET(request: Request) {
@@ -11,5 +12,5 @@ export async function POST(request: Request) {
 
 async function handleLogout(request: Request) {
   await clearSessionCookie();
-  return NextResponse.redirect(new URL("/login", request.url));
+  return NextResponse.redirect(new URL("/login", resolveRequestAppOrigin(request)));
 }
