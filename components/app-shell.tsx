@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogoutButton } from "@/components/logout-button";
 import type { SessionUser } from "@/lib/auth";
 import { AppNav } from "@/components/app-nav";
 
@@ -18,11 +19,7 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
               {user.name.slice(0, 1)}
             </span>
             <span className="hidden md:inline">{user.name}</span>
-            <form action="/api/v1/auth/logout" method="post">
-              <button className="rounded-md border border-line bg-card px-2.5 py-1.5 text-sm text-steel transition hover:border-primary hover:text-primary sm:px-3">
-                退出
-              </button>
-            </form>
+            <LogoutButton />
           </div>
         </div>
       </header>

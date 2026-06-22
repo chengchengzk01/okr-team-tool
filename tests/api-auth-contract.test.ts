@@ -34,6 +34,8 @@ describe("API authentication contract", () => {
   test("logout always clears the session and redirects back to login", () => {
     const source = readFileSync(join(process.cwd(), "app/api/v1/auth/logout/route.ts"), "utf8");
     const appUrlSource = readFileSync(join(process.cwd(), "lib/app-url.ts"), "utf8");
+    const shellSource = readFileSync(join(process.cwd(), "components/app-shell.tsx"), "utf8");
+    const buttonSource = readFileSync(join(process.cwd(), "components/logout-button.tsx"), "utf8");
 
     expect(source).toContain("clearSessionCookie");
     expect(source).toContain("NextResponse.redirect");
@@ -41,6 +43,9 @@ describe("API authentication contract", () => {
     expect(source).toContain('new URL("/login", resolveRequestAppOrigin(request))');
     expect(appUrlSource).toContain("x-forwarded-host");
     expect(appUrlSource).toContain("x-forwarded-proto");
+    expect(shellSource).toContain("LogoutButton");
+    expect(buttonSource).toContain('fetch("/api/v1/auth/logout"');
+    expect(buttonSource).toContain('router.replace("/login")');
   });
 
   test("Feishu OAuth callback can return the PRD JSON token contract", () => {
