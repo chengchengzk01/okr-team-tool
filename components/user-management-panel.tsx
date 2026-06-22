@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { getDepartmentDisplayName } from "@/lib/department-utils";
 import type { Department, Role, User } from "@/lib/domain/types";
 
 type EditableRow = {
@@ -37,6 +38,14 @@ export function UserManagementPanel({
   const departmentOptions = useMemo(
     () => departments.filter((department) => department.id !== "dept-company"),
     [departments]
+  );
+  const departmentNameCounts = useMemo(
+    () =>
+      departmentOptions.reduce<Record<string, number>>((counts, department) => {
+        counts[department.name] = (counts[department.name] ?? 0) + 1;
+        return counts;
+      }, {}),
+    [departmentOptions]
   );
 
   async function saveUser(userId: string) {
@@ -112,7 +121,7 @@ export function UserManagementPanel({
                       <option value="">未分配</option>
                       {departmentOptions.map((department) => (
                         <option key={department.id} value={department.id}>
-                          {department.name}
+                          {getDepartmentDisplayName(department, departmentNameCounts[department.name] ?? 0)}
                         </option>
                       ))}
                     </select>

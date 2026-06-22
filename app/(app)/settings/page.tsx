@@ -1,3 +1,4 @@
+import { DepartmentManagementPanel } from "@/components/department-management-panel";
 import { FeishuConfigForm } from "@/components/feishu-config-form";
 import { FeishuIntegrationActions } from "@/components/feishu-integration-actions";
 import { PageHeader } from "@/components/page-header";
@@ -156,6 +157,7 @@ export default async function SettingsPage() {
           </table>
         </div>
       </section>
+      <DepartmentManagementPanel departments={departments} />
       <UserManagementPanel users={allUsers} departments={departments} />
       <section className="mt-6 rounded-lg border border-line bg-card p-5 shadow-panel">
         <h2 className="font-semibold">导出日志</h2>

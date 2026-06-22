@@ -1,6 +1,7 @@
 import type { Department, ExportLog, User } from "@/lib/domain/types";
 import { getConfiguredAppUrl } from "@/lib/app-url";
 import { prismaQueries } from "@/lib/data/prisma-queries";
+import { isGenericDepartmentName, normalizeDepartmentName } from "@/lib/department-utils";
 import { repository } from "@/lib/data/repository";
 import { prisma } from "@/lib/prisma";
 import type { FeishuCalendarSettings } from "@/lib/integrations/feishu-config";
@@ -231,15 +232,24 @@ export class RealFeishuProvider extends MockFeishuProvider {
     for (const item of rawDepartments) {
       const feishuDeptId = item.open_department_id ?? item.department_id;
       if (!feishuDeptId) continue;
+      const existing = await prisma.department.findUnique({
+        where: { feishuDeptId },
+        select: { name: true }
+      });
+      const incomingName = normalizeDepartmentName(item.name ?? item.i18n_name?.zh_cn);
+      const nextName =
+        isGenericDepartmentName(incomingName) && existing?.name && !isGenericDepartmentName(existing.name)
+          ? existing.name
+          : incomingName;
       const department = await prisma.department.upsert({
         where: { feishuDeptId },
         create: {
           feishuDeptId,
-          name: item.name ?? item.i18n_name?.zh_cn ?? "未命名部门",
+          name: nextName,
           parentId: await this.findLocalDepartmentId(item.parent_department_id)
         },
         update: {
-          name: item.name ?? item.i18n_name?.zh_cn ?? "未命名部门",
+          name: nextName,
           parentId: await this.findLocalDepartmentId(item.parent_department_id)
         }
       });
