@@ -31,6 +31,14 @@ describe("API authentication contract", () => {
     expect(source).toContain("未登录");
   });
 
+  test("logout always clears the session and redirects back to login", () => {
+    const source = readFileSync(join(process.cwd(), "app/api/v1/auth/logout/route.ts"), "utf8");
+
+    expect(source).toContain("clearSessionCookie");
+    expect(source).toContain("NextResponse.redirect");
+    expect(source).toContain('new URL("/login", request.url)');
+  });
+
   test("Feishu OAuth callback can return the PRD JSON token contract", () => {
     const source = readFileSync(join(process.cwd(), "app/api/v1/auth/feishu/callback/route.ts"), "utf8");
 
