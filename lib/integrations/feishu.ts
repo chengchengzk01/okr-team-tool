@@ -209,16 +209,17 @@ export class RealFeishuProvider extends MockFeishuProvider {
       }
     });
     if (process.env.FEISHU_SYNC_ON_LOGIN !== "false") await this.syncOrganization();
+    const resolvedUser = await this.ensureBootstrapSuperAdmin(user.id);
 
     return {
-      id: user.id,
-      feishuUserId: user.feishuUserId,
-      name: user.name,
-      email: user.email ?? undefined,
-      avatarUrl: user.avatarUrl ?? undefined,
-      role: user.role,
-      departmentId: user.departmentId ?? undefined,
-      isActive: user.isActive
+      id: resolvedUser.id,
+      feishuUserId: resolvedUser.feishuUserId,
+      name: resolvedUser.name,
+      email: resolvedUser.email ?? undefined,
+      avatarUrl: resolvedUser.avatarUrl ?? undefined,
+      role: resolvedUser.role,
+      departmentId: resolvedUser.departmentId ?? undefined,
+      isActive: resolvedUser.isActive
     };
   }
 
@@ -367,6 +368,21 @@ export class RealFeishuProvider extends MockFeishuProvider {
       }, tenantAccessToken);
     }
     return this.createExportLog("calendar_events", quarterId, "company", "飞书日历重复事件已终止");
+  }
+
+  private async ensureBootstrapSuperAdmin(userId: string) {
+    const existingSuperAdmin = await prisma.user.findFirst({
+      where: { role: "super_admin", isActive: true },
+      select: { id: true }
+    });
+    if (existingSuperAdmin) {
+      return prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    }
+
+    return prisma.user.update({
+      where: { id: userId },
+      data: { role: "super_admin", isActive: true }
+    });
   }
 
   async syncBitable(quarterId: string) {

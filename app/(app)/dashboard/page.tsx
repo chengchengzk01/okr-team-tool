@@ -14,6 +14,10 @@ export default async function DashboardPage({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const params = await searchParams;
+  const quarters = (await prismaQueries.listQuarters()) ?? repository.listQuarters();
+  if (quarters.length === 0) {
+    return <DashboardInitializationState role={user.role} />;
+  }
   const dashboard = (await prismaQueries.getDashboard(user.id)) ?? repository.getDashboard(user.id);
   const requestedView = params.view === "team" || params.view === "company" ? params.view : "personal";
   const view = requestedView === "company" && dashboard.user.role !== "super_admin" ? "team" : requestedView;
@@ -106,6 +110,43 @@ export default async function DashboardPage({
         </Panel>
       </div>
       )}
+    </>
+  );
+}
+
+function DashboardInitializationState({ role }: { role: "super_admin" | "dept_manager" | "member" }) {
+  const isAdmin = role === "super_admin";
+
+  return (
+    <>
+      <PageHeader title="系统初始化" eyebrow="首次上线后的必要步骤" />
+      <section className="rounded-lg border border-line bg-card p-6 shadow-panel">
+        <div className="max-w-2xl">
+          <h2 className="text-lg font-semibold text-ink">当前还没有可用季度</h2>
+          <p className="mt-3 text-sm leading-6 text-steel">
+            飞书登录已经完成，但数据库里还没有创建季度，所以看板暂时没有可展示的业务数据。
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            {isAdmin ? (
+              <>
+                <a href="/quarters" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white">
+                  进入季度管理
+                </a>
+                <a href="/settings" className="rounded-md border border-line px-4 py-2 text-sm font-medium text-steel">
+                  进入系统设置
+                </a>
+              </>
+            ) : (
+              <a href="/login" className="rounded-md border border-line px-4 py-2 text-sm font-medium text-steel">
+                返回登录页
+              </a>
+            )}
+          </div>
+          <p className="mt-4 text-xs leading-5 text-muted">
+            {isAdmin ? "建议先创建季度，再继续组织同步、日历和多维表格收口。" : "请联系超级管理员先完成季度初始化。"}
+          </p>
+        </div>
+      </section>
     </>
   );
 }

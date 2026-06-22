@@ -13,11 +13,13 @@ export default async function SettingsPage() {
   const user = await getCurrentUser();
   if (user?.role !== "super_admin") redirect("/dashboard");
 
-  const dashboard = (await prismaQueries.getDashboard(user.id)) ?? repository.getDashboard(user.id);
-  const logs = dashboard.exportLogs.slice(0, 20);
-  const usersById = new Map(dashboard.visibleUsers.map((item) => [item.id, item.name]));
   const allUsers = (await prismaQueries.listUsers()) ?? repository.listUsers();
   const departments = (await prismaQueries.listDepartments()) ?? repository.listDepartments();
+  const quarters = (await prismaQueries.listQuarters()) ?? repository.listQuarters();
+  const currentQuarter = quarters.find((quarter) => quarter.status === "active") ?? quarters[0] ?? null;
+  const dashboard = currentQuarter ? ((await prismaQueries.getDashboard(user.id)) ?? repository.getDashboard(user.id)) : null;
+  const logs = dashboard?.exportLogs.slice(0, 20) ?? [];
+  const usersById = new Map(allUsers.map((item) => [item.id, item.name]));
   const departmentsById = new Map(departments.map((item) => [item.id, item.name]));
   const runtimeConfig = await getFeishuRuntimeConfig();
   const config = getFeishuConfigReadiness(runtimeConfig);
@@ -86,17 +88,29 @@ export default async function SettingsPage() {
           hasDriveFolderToken: Boolean(runtimeConfig.driveFolderToken)
         }}
       />
-      <FeishuIntegrationActions
-        mode={config.mode}
-        quarterId={dashboard.quarter.id}
-        readiness={{
-          oauthReady: config.oauthReady,
-          orgSyncReady: config.orgSyncReady,
-          calendarReady: config.calendarReady,
-          bitableReady: config.bitableReady,
-          driveReady: config.driveReady
-        }}
-      />
+      {currentQuarter ? (
+        <FeishuIntegrationActions
+          mode={config.mode}
+          quarterId={currentQuarter.id}
+          readiness={{
+            oauthReady: config.oauthReady,
+            orgSyncReady: config.orgSyncReady,
+            calendarReady: config.calendarReady,
+            bitableReady: config.bitableReady,
+            driveReady: config.driveReady
+          }}
+        />
+      ) : (
+        <section className="mt-6 rounded-lg border border-line bg-card p-5 shadow-panel">
+          <h2 className="font-semibold text-ink">系统尚未初始化季度</h2>
+          <p className="mt-2 text-sm leading-6 text-steel">
+            设置页已可访问，但涉及季度的数据同步、日历和文档导出需要先创建至少一个季度。
+          </p>
+          <a className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white" href="/quarters">
+            先去创建季度
+          </a>
+        </section>
+      )}
       <section className="mt-6 rounded-lg border border-line bg-card p-5 shadow-panel">
         <div className="flex flex-col gap-1">
           <h2 className="font-semibold text-ink">最近集成任务</h2>
