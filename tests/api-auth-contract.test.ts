@@ -23,6 +23,16 @@ describe("API authentication contract", () => {
     expect(source).toContain("super_admin");
     expect(source).toContain("只有超级管理员可以补齐演示数据");
     expect(source).toContain("getCurrentQuarter");
+    expect(source).toContain("createdConfidenceScores");
+    expect(source).toContain("createdWeeklyCommitments");
+    expect(source).toContain("createdWeeklyCelebrations");
+  });
+
+  test("department delete route soft deletes instead of blocking synced departments", () => {
+    const source = readFileSync(join(process.cwd(), "app/api/v1/departments/[id]/route.ts"), "utf8");
+
+    expect(source).toContain("isArchived: true");
+    expect(source).not.toContain("飞书同步部门不支持删除");
   });
 
   test("weekly obstacle summary is restricted to department managers", () => {

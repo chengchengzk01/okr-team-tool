@@ -3,6 +3,7 @@ import { DepartmentManagementPanel } from "@/components/department-management-pa
 import { EmptyGuidanceCard } from "@/components/empty-guidance-card";
 import { FeishuConfigForm } from "@/components/feishu-config-form";
 import { FeishuIntegrationActions } from "@/components/feishu-integration-actions";
+import { MobileFeishuAcceptancePanel } from "@/components/mobile-feishu-acceptance-panel";
 import { PageHeader } from "@/components/page-header";
 import { UserManagementPanel } from "@/components/user-management-panel";
 import { getCurrentUser } from "@/lib/auth";
@@ -88,6 +89,7 @@ export default async function SettingsPage() {
           tip="当前设置页已经集中了真实飞书配置、演示数据、部门管理、用户管理和导出日志，适合作为首用引导中心。"
         />
       </section>
+      <MobileFeishuAcceptancePanel />
       <FeishuConfigForm
         initialConfig={{
           provider: runtimeConfig.provider,

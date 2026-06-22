@@ -18,6 +18,7 @@ export type Department = {
   id: string;
   feishuDeptId?: string;
   name: string;
+  isArchived?: boolean;
   parentId?: string;
   managerId?: string;
 };

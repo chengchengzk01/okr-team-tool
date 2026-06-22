@@ -51,6 +51,9 @@ export async function POST(request: Request) {
     let createdObjectives = 0;
     let createdKeyResults = 0;
     let createdAlignments = 0;
+    let createdConfidenceScores = 0;
+    let createdWeeklyCommitments = 0;
+    let createdWeeklyCelebrations = 0;
     let createdMetrics = 0;
     let createdMetricRecords = 0;
 
@@ -157,56 +160,67 @@ export async function POST(request: Request) {
       { keyResultId: departmentKeyResultId, userId: demoManager.id, score: 7, note: "本周线索响应速度明显改善" },
       { keyResultId: individualKeyResultId, userId: demoMember.id, score: 6, note: "重点客户推进仍需加速" }
     ]) {
-      snapshot.submitConfidenceScore({
-        keyResultId: item.keyResultId,
-        userId: item.userId,
-        weekNumber: currentWeek,
-        quarterId: quarter.id,
-        score: item.score,
-        note: item.note
-      });
+      if (!hasConfidenceScore(snapshot, item.keyResultId, item.userId, quarter.id, currentWeek)) {
+        snapshot.submitConfidenceScore({
+          keyResultId: item.keyResultId,
+          userId: item.userId,
+          weekNumber: currentWeek,
+          quarterId: quarter.id,
+          score: item.score,
+          note: item.note
+        });
+        createdConfidenceScores += 1;
+      }
     }
 
-    snapshot.submitWeeklyCommitment({
-      userId: demoManager.id,
-      quarterId: quarter.id,
-      weekNumber: currentWeek,
-      priority1: "推进高意向客户首轮方案沟通",
-      priority2: "跟进部门级 KR 周报数据",
-      priority3: "同步销售线索清洗节奏",
-      priorSelfReview: {
-        priority_1_result: "completed",
-        priority_2_result: "partial",
-        priority_3_result: "completed"
-      }
-    });
-    if (demoMember.id !== demoManager.id) {
+    if (!hasWeeklyCommitment(snapshot, user.id, demoManager.id, quarter.id, currentWeek)) {
       snapshot.submitWeeklyCommitment({
-        userId: demoMember.id,
+        userId: demoManager.id,
         quarterId: quarter.id,
         weekNumber: currentWeek,
-        priority1: "完成 3 个重点客户推进会前准备",
-        priority2: "输出客户异议清单并同步销售",
-        priority3: "更新个人 KR 当前值",
+        priority1: "推进高意向客户首轮方案沟通",
+        priority2: "跟进部门级 KR 周报数据",
+        priority3: "同步销售线索清洗节奏",
         priorSelfReview: {
-          priority_1_result: "partial",
-          priority_2_result: "completed",
+          priority_1_result: "completed",
+          priority_2_result: "partial",
           priority_3_result: "completed"
         }
       });
+      createdWeeklyCommitments += 1;
+    }
+    if (demoMember.id !== demoManager.id) {
+      if (!hasWeeklyCommitment(snapshot, user.id, demoMember.id, quarter.id, currentWeek)) {
+        snapshot.submitWeeklyCommitment({
+          userId: demoMember.id,
+          quarterId: quarter.id,
+          weekNumber: currentWeek,
+          priority1: "完成 3 个重点客户推进会前准备",
+          priority2: "输出客户异议清单并同步销售",
+          priority3: "更新个人 KR 当前值",
+          priorSelfReview: {
+            priority_1_result: "partial",
+            priority_2_result: "completed",
+            priority_3_result: "completed"
+          }
+        });
+        createdWeeklyCommitments += 1;
+      }
     }
 
-    await upsertWeeklyCelebration(demoManager.id, quarter.id, currentWeek, {
+    const managerCelebration = await upsertWeeklyCelebration(demoManager.id, quarter.id, currentWeek, {
       achievements: [{ text: "完成本周重点线索分层并推动两单进入下一阶段" }],
       obstacles: "部分客户反馈决策链较长，需要更早触达关键人",
       mood: "energized"
     });
+    if (managerCelebration === "created") createdWeeklyCelebrations += 1;
     if (demoMember.id !== demoManager.id) {
-      await upsertWeeklyCelebration(demoMember.id, quarter.id, currentWeek, {
+      const memberCelebration = await upsertWeeklyCelebration(demoMember.id, quarter.id, currentWeek, {
         achievements: [{ text: "完成 2 场关键客户推进会，并拿到 1 个明确试用意向" }],
         obstacles: "客户内部排期紧张，推进节奏偏慢",
         mood: "steady"
       });
+      if (memberCelebration === "created") createdWeeklyCelebrations += 1;
     }
 
     const existingMetric = await prisma.healthMetric.findFirst({
@@ -259,6 +273,9 @@ export async function POST(request: Request) {
         createdObjectives,
         createdKeyResults,
         createdAlignments,
+        createdConfidenceScores,
+        createdWeeklyCommitments,
+        createdWeeklyCelebrations,
         createdMetrics,
         createdMetricRecords,
         currentWeek
@@ -290,7 +307,7 @@ async function upsertWeeklyCelebration(
   });
 
   if (existing) {
-    return prisma.weeklyCelebration.update({
+    await prisma.weeklyCelebration.update({
       where: { id: existing.id },
       data: {
         achievements: input.achievements,
@@ -299,9 +316,10 @@ async function upsertWeeklyCelebration(
         updatedAt: new Date()
       }
     });
+    return "updated" as const;
   }
 
-  return prisma.weeklyCelebration.create({
+  await prisma.weeklyCelebration.create({
     data: {
       userId,
       quarterId,
@@ -312,4 +330,29 @@ async function upsertWeeklyCelebration(
       submittedAt: new Date()
     }
   });
+  return "created" as const;
+}
+
+function hasConfidenceScore(
+  snapshot: NonNullable<Awaited<ReturnType<typeof prismaQueries.getRepositorySnapshot>>> | typeof repository,
+  keyResultId: string,
+  userId: string,
+  quarterId: string,
+  weekNumber: number
+) {
+  return snapshot
+    .listConfidenceHistory(keyResultId)
+    .some((item) => item.userId === userId && item.weekNumber === weekNumber);
+}
+
+function hasWeeklyCommitment(
+  snapshot: NonNullable<Awaited<ReturnType<typeof prismaQueries.getRepositorySnapshot>>> | typeof repository,
+  operatorUserId: string,
+  targetUserId: string,
+  quarterId: string,
+  weekNumber: number
+) {
+  return snapshot
+    .getDashboard(operatorUserId)
+    .commitments.some((item) => item.userId === targetUserId && item.quarterId === quarterId && item.weekNumber === weekNumber);
 }

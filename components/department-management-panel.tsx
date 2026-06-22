@@ -78,7 +78,7 @@ export function DepartmentManagementPanel({ departments }: { departments: Depart
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 className="font-semibold text-ink">部门管理</h2>
-          <p className="mt-1 text-sm text-steel">支持手动新增部门、修改名称；删除仅开放给本地新建部门，飞书同步部门保留同步关系。</p>
+          <p className="mt-1 text-sm text-steel">支持手动新增部门、修改名称；删除会对部门做软删除，前台不再显示，但历史数据与飞书映射会保留。</p>
         </div>
         <div className="flex w-full max-w-xl flex-col gap-3 sm:flex-row">
           <input
@@ -116,14 +116,15 @@ export function DepartmentManagementPanel({ departments }: { departments: Depart
             {departments.map((department) => {
               const feedback = rowFeedback[department.id];
               const isSynced = Boolean(department.feishuDeptId);
-              const canDelete = !isSynced;
               return (
                 <tr key={department.id} className="border-t border-line align-top">
                   <td className="px-3 py-3">
                     <div className="font-medium text-ink">
                       {getDepartmentDisplayName(department, departmentNameCounts[department.name] ?? 0)}
                     </div>
-                    <div className="mt-1 text-xs text-muted">{department.feishuDeptId ?? department.id}</div>
+                    <div className="mt-1 text-xs text-muted">
+                      {department.feishuDeptId ? `open_department_id: ${department.feishuDeptId}` : `local_department_id: ${department.id}`}
+                    </div>
                   </td>
                   <td className="px-3 py-3 text-steel">{isSynced ? "飞书同步" : "本地新增"}</td>
                   <td className="px-3 py-3">
@@ -150,7 +151,7 @@ export function DepartmentManagementPanel({ departments }: { departments: Depart
                       </button>
                       <button
                         type="button"
-                        disabled={isPending || !canDelete}
+                        disabled={isPending}
                         onClick={() => deleteDepartment(department.id)}
                         className="rounded-md border border-line px-3 py-2 text-sm font-medium text-steel transition hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
                       >
@@ -162,7 +163,7 @@ export function DepartmentManagementPanel({ departments }: { departments: Depart
                         {feedback.message}
                       </div>
                     ) : null}
-                    {!canDelete ? <div className="mt-2 text-xs text-muted">飞书同步部门不支持删除。</div> : null}
+                    <div className="mt-2 text-xs text-muted">删除后会做软删除：当前页面、筛选器和下拉中不再显示该部门。</div>
                   </td>
                 </tr>
               );
@@ -171,7 +172,7 @@ export function DepartmentManagementPanel({ departments }: { departments: Depart
         </table>
       </div>
       <div className="mt-3 text-xs leading-5 text-muted">
-        如果飞书同步回来的部门名缺失，系统会保留你手动改过的名称，不会再被泛化成重复的“未命名部门”。
+        如果飞书同步回来的部门名缺失，系统会优先尝试回填飞书真实部门名；若仍缺失，会保留你手动改过的名称，不会再被泛化成重复的“未命名部门”。
       </div>
     </section>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -11,6 +12,9 @@ type Summary = {
   createdObjectives: number;
   createdKeyResults: number;
   createdAlignments: number;
+  createdConfidenceScores: number;
+  createdWeeklyCommitments: number;
+  createdWeeklyCelebrations: number;
   createdMetrics: number;
   createdMetricRecords: number;
   currentWeek: number;
@@ -47,6 +51,13 @@ export function DemoDataBootstrapPanel() {
           <p className="mt-1 text-sm text-steel">
             一键补齐最小业务样例，给看板、报表、季度导出和健康指标提供可展示内容。重复执行时会尽量复用已有演示数据，不会无限追加。
           </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
+            {["公司 / 部门 / 个人 OKR", "信心值", "周承诺", "周五庆祝", "健康指标"].map((item) => (
+              <span key={item} className="rounded-full border border-line bg-hover px-2.5 py-1">
+                {item}
+              </span>
+            ))}
+          </div>
         </div>
         <button
           type="button"
@@ -67,9 +78,26 @@ export function DemoDataBootstrapPanel() {
           <DemoItem label="新增 Objective" value={String(summary.createdObjectives)} />
           <DemoItem label="新增 KR" value={String(summary.createdKeyResults)} />
           <DemoItem label="新增对齐" value={String(summary.createdAlignments)} />
+          <DemoItem label="新增信心值" value={String(summary.createdConfidenceScores)} />
+          <DemoItem label="新增周承诺" value={String(summary.createdWeeklyCommitments)} />
+          <DemoItem label="新增周五庆祝" value={String(summary.createdWeeklyCelebrations)} />
           <DemoItem label="新增健康数据" value={`${summary.createdMetrics} / ${summary.createdMetricRecords}`} />
         </div>
       ) : null}
+      <div className="mt-4 rounded-md border border-dashed border-line bg-hover p-4">
+        <div className="text-sm font-semibold text-ink">补完后建议这样验</div>
+        <div className="mt-2 grid gap-2 text-sm text-steel md:grid-cols-3">
+          <Link href="/dashboard" className="rounded-md border border-line bg-card px-3 py-2 hover:bg-paper">
+            去看板看四象限和健康摘要
+          </Link>
+          <Link href="/weekly" className="rounded-md border border-line bg-card px-3 py-2 hover:bg-paper">
+            去周仪式页看信心值与周承诺
+          </Link>
+          <Link href="/reports" className="rounded-md border border-line bg-card px-3 py-2 hover:bg-paper">
+            去报表页看趋势和部门对比
+          </Link>
+        </div>
+      </div>
     </section>
   );
 }

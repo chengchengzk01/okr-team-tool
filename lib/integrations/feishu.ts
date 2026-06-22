@@ -12,6 +12,21 @@ const globalForFeishuPrisma = globalThis as unknown as {
   okrFeishuRequestQueue?: Promise<unknown>;
 };
 
+type FeishuDepartmentPayload = {
+  department_id?: string;
+  open_department_id?: string;
+  parent_department_id?: string;
+  name?: string;
+  display_name?: string;
+  department_name?: string;
+  i18n_name?: {
+    zh_cn?: string | { value?: string };
+    "zh-CN"?: string | { value?: string };
+    en_us?: string | { value?: string };
+    "en-US"?: string | { value?: string };
+  };
+};
+
 export type FeishuProvider = {
   exchangeCodeForUser(code: string): Promise<User>;
   syncOrganization(): Promise<{ users: User[]; departments: Department[] }>;
@@ -31,6 +46,19 @@ export type FeishuDocumentOperator = User & {
   exportDepartmentId?: string;
   exportUserId?: string;
 };
+
+export function extractFeishuDepartmentName(item: FeishuDepartmentPayload) {
+  const candidates = [
+    item.name,
+    item.display_name,
+    item.department_name,
+    unwrapLocalizedDepartmentName(item.i18n_name?.zh_cn),
+    unwrapLocalizedDepartmentName(item.i18n_name?.["zh-CN"]),
+    unwrapLocalizedDepartmentName(item.i18n_name?.en_us),
+    unwrapLocalizedDepartmentName(item.i18n_name?.["en-US"])
+  ];
+  return normalizeDepartmentName(candidates.find((value) => typeof value === "string" && value.trim().length > 0));
+}
 
 export class MockFeishuProvider implements FeishuProvider {
   async getAuthUrl(state: string) {
@@ -228,18 +256,41 @@ export class RealFeishuProvider extends MockFeishuProvider {
     const tenantAccessToken = await this.getTenantAccessToken();
     const rawDepartments = await this.listFeishuDepartments(tenantAccessToken);
     const rawUsers = await this.listFeishuUsers(tenantAccessToken);
+    const existingDepartments = await prisma.department.findMany({
+      select: { feishuDeptId: true, name: true, isArchived: true }
+    });
+    const existingDepartmentNames = new Map(
+      existingDepartments.filter((item): item is { feishuDeptId: string; name: string; isArchived: boolean } => Boolean(item.feishuDeptId)).map((item) => [item.feishuDeptId, item])
+    );
+    const unresolvedDepartmentIds = rawDepartments
+      .map((item) => {
+        const feishuDeptId = item.open_department_id ?? item.department_id;
+        if (!feishuDeptId) return null;
+        const incomingName = extractFeishuDepartmentName(item);
+        const existingDepartment = existingDepartmentNames.get(feishuDeptId);
+        if (existingDepartment?.isArchived) return null;
+        const existingName = existingDepartment?.name;
+        if (!isGenericDepartmentName(incomingName)) return null;
+        if (existingName && !isGenericDepartmentName(existingName)) return null;
+        return feishuDeptId;
+      })
+      .filter((value): value is string => Boolean(value));
+    if (unresolvedDepartmentIds.length > 0) {
+      throw new Error(
+        `飞书组织同步未返回部门名称字段，当前只能拿到 open_department_id，无法自动回填真实部门名。请先在飞书开放平台检查通讯录部门可见权限，再重试。受影响部门：${unresolvedDepartmentIds.slice(0, 6).join("、")}`
+      );
+    }
     const syncedDepartments: Department[] = [];
     for (const item of rawDepartments) {
       const feishuDeptId = item.open_department_id ?? item.department_id;
       if (!feishuDeptId) continue;
-      const existing = await prisma.department.findUnique({
-        where: { feishuDeptId },
-        select: { name: true }
-      });
-      const incomingName = normalizeDepartmentName(item.name ?? item.i18n_name?.zh_cn);
+      const existingDepartment = existingDepartmentNames.get(feishuDeptId);
+      if (existingDepartment?.isArchived) continue;
+      const existingName = existingDepartment?.name;
+      const incomingName = extractFeishuDepartmentName(item);
       const nextName =
-        isGenericDepartmentName(incomingName) && existing?.name && !isGenericDepartmentName(existing.name)
-          ? existing.name
+        isGenericDepartmentName(incomingName) && existingName && !isGenericDepartmentName(existingName)
+          ? existingName
           : incomingName;
       const department = await prisma.department.upsert({
         where: { feishuDeptId },
@@ -257,6 +308,7 @@ export class RealFeishuProvider extends MockFeishuProvider {
         id: department.id,
         feishuDeptId: department.feishuDeptId ?? undefined,
         name: department.name,
+        isArchived: department.isArchived,
         parentId: department.parentId ?? undefined,
         managerId: department.managerId ?? undefined
       });
@@ -548,13 +600,7 @@ export class RealFeishuProvider extends MockFeishuProvider {
   private async getFeishuDepartment(departmentId: string, accessToken: string) {
     const result = await this.getFeishu<{
       data?: {
-        department?: {
-          department_id?: string;
-          open_department_id?: string;
-          parent_department_id?: string;
-          name?: string;
-          i18n_name?: { zh_cn?: string };
-        };
+        department?: FeishuDepartmentPayload;
       };
     }>(`/open-apis/contact/v3/departments/${encodeURIComponent(departmentId)}?department_id_type=open_department_id`, accessToken);
     return result.data?.department;
@@ -583,7 +629,7 @@ export class RealFeishuProvider extends MockFeishuProvider {
 
   private async findLocalDepartmentId(feishuDeptId?: string) {
     if (!feishuDeptId || feishuDeptId === "0") return undefined;
-    return (await prisma.department.findUnique({ where: { feishuDeptId } }))?.id;
+    return (await prisma.department.findFirst({ where: { feishuDeptId, isArchived: false } }))?.id;
   }
 
   private async listBitableRecordIds(appToken: string, tableId: string, accessToken: string) {
@@ -753,6 +799,11 @@ export function dedupeFeishuUsersByOpenId<T extends { open_id?: string; union_id
     deduped.set(key, user);
   }
   return [...deduped.values()];
+}
+
+function unwrapLocalizedDepartmentName(value?: string | { value?: string }) {
+  if (typeof value === "string") return value;
+  return value?.value;
 }
 
 function parseCalendarEventIds(value?: string): Record<string, string[]> {

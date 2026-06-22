@@ -108,6 +108,7 @@ model Department {
   id            String   @id @default(uuid())
   feishuDeptId  String?  @unique @map("feishu_dept_id")
   name          String
+  isArchived    Boolean  @default(false) @map("is_archived")
   parentId      String?  @map("parent_id")
   managerId     String?  @map("manager_id")
   createdAt     DateTime @default(now()) @map("created_at")

@@ -22,7 +22,7 @@ export const prismaQueries = {
 
   async listDepartments(): Promise<Department[] | null> {
     if (!enabled()) return null;
-    return prisma.department.findMany({ orderBy: { name: "asc" } }) as Promise<Department[]>;
+    return prisma.department.findMany({ where: { isArchived: false }, orderBy: { name: "asc" } }) as Promise<Department[]>;
   },
 
   async listQuarters(): Promise<Quarter[] | null> {
@@ -194,6 +194,7 @@ async function loadSeedStateFromPrisma(): Promise<SeedState> {
       id: department.id,
       feishuDeptId: department.feishuDeptId ?? undefined,
       name: department.name,
+      isArchived: department.isArchived,
       parentId: department.parentId ?? undefined,
       managerId: department.managerId ?? undefined
     })),

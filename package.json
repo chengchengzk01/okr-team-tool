@@ -13,6 +13,7 @@
     "prisma:generate": "prisma generate",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
+    "db:prepare:deploy": "prisma db push && prisma migrate deploy",
     "db:push": "prisma db push",
     "db:seed": "tsc -p tsconfig.seed.json && NODE_PATH=./node_modules node /private/tmp/okr-seed-build/prisma/seed.js",
     "db:check": "node scripts/check-db.mjs",

@@ -47,8 +47,11 @@
 
 - 开发迁移: `npm run db:migrate:dev`
 - 线上迁移: `npm run db:migrate:deploy`
+- 线上发布前自动对齐 schema: `npm run db:prepare:deploy`
 - 数据备份: `npm run db:backup`
 - 数据恢复: `npm run db:restore -- --file backups/<snapshot>.json`
+
+当前 Render 发布前命令已使用 `npm run db:prepare:deploy`，会先执行 `prisma db push` 对齐新增字段，再执行 `prisma migrate deploy` 兼容后续正式 migration。
 
 更完整的切换、回滚和限制说明见 [docs/postgres-ops.md](/Users/zhangjiafeng/同步空间/98-AI/codex/OKR/docs/postgres-ops.md)。
 

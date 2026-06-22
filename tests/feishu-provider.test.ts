@@ -12,6 +12,7 @@ import {
   buildDocumentShareRequest,
   dedupeFeishuUsersByOpenId,
   enqueueFeishuRequest,
+  extractFeishuDepartmentName,
   getFeishuRetryDelayMs,
   MockFeishuProvider
 } from "@/lib/integrations/feishu";
@@ -72,6 +73,18 @@ describe("MockFeishuProvider", () => {
       { open_id: "ou-1", name: "Alpha" },
       { open_id: "ou-2", name: "Beta" }
     ]);
+  });
+
+  test("extracts department names from multiple Feishu payload shapes", () => {
+    expect(extractFeishuDepartmentName({ name: "销售部" })).toBe("销售部");
+    expect(extractFeishuDepartmentName({ i18n_name: { zh_cn: "产品部" } })).toBe("产品部");
+    expect(extractFeishuDepartmentName({ i18n_name: { "zh-CN": "市场部" } })).toBe("市场部");
+    expect(extractFeishuDepartmentName({ i18n_name: { zh_cn: { value: "客服部" } } })).toBe("客服部");
+    expect(extractFeishuDepartmentName({ display_name: "运营部" })).toBe("运营部");
+  });
+
+  test("falls back to generic naming when every department name field is missing", () => {
+    expect(extractFeishuDepartmentName({ open_department_id: "od-test" })).toBe("未命名部门");
   });
 });
 
