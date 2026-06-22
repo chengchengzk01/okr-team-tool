@@ -16,6 +16,15 @@ describe("API authentication contract", () => {
     expect(source).toContain("未登录");
   });
 
+  test("demo bootstrap route is restricted to super admins", () => {
+    const source = readFileSync(join(process.cwd(), "app/api/v1/demo/bootstrap/route.ts"), "utf8");
+
+    expect(source).toContain("getCurrentUser");
+    expect(source).toContain("super_admin");
+    expect(source).toContain("只有超级管理员可以补齐演示数据");
+    expect(source).toContain("getCurrentQuarter");
+  });
+
   test("weekly obstacle summary is restricted to department managers", () => {
     const source = readFileSync(join(process.cwd(), "app/api/v1/weekly-celebrations/obstacles/route.ts"), "utf8");
 
