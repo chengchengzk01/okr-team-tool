@@ -24,4 +24,13 @@ describe("dashboard UI contract", () => {
     expect(source).toContain("当前还没有可用季度");
     expect(source).toContain('href="/quarters"');
   });
+
+  test("dashboard empty states point users to next-step actions", () => {
+    const source = readFileSync(join(process.cwd(), "app/(app)/dashboard/page.tsx"), "utf8");
+
+    expect(source).toContain("EmptyGuidanceCard");
+    expect(source).toContain("当前看板还没有可展示的业务数据");
+    expect(source).toContain("去补演示数据");
+    expect(source).toContain("去填周仪式");
+  });
 });

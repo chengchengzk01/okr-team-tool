@@ -1,3 +1,4 @@
+import { EmptyGuidanceCard } from "@/components/empty-guidance-card";
 import { PageHeader } from "@/components/page-header";
 import { StatusPill } from "@/components/status-pill";
 import { getCurrentUser } from "@/lib/auth";
@@ -33,6 +34,29 @@ export default async function DashboardPage({
       <PageHeader title="四象限周报看板" eyebrow={timeLabel}>
         <StatusPill tone="blue">{dashboard.quarter.status}</StatusPill>
       </PageHeader>
+      {!dashboard.okrTree.length && !dashboard.commitments.length && !dashboard.celebrations.length && !dashboard.healthMetrics.length ? (
+        <div className="mb-4">
+          <EmptyGuidanceCard
+            title="当前看板还没有可展示的业务数据"
+            description={
+              dashboard.user.role === "super_admin"
+                ? "看板依赖 OKR、周仪式和健康指标数据。你可以先去设置页补一套演示数据，或先创建季度内的真实 OKR。"
+                : "当前账号可见范围内还没有足够数据生成看板。你可以先补个人 OKR、填写周仪式，或联系管理员补演示数据。"
+            }
+            actions={
+              dashboard.user.role === "super_admin"
+                ? [
+                    { href: "/settings", label: "去补演示数据" },
+                    { href: "/okr", label: "去查看 OKR", tone: "secondary" }
+                  ]
+                : [
+                    { href: "/okr", label: "去查看 OKR" },
+                    { href: "/weekly", label: "去填周仪式", tone: "secondary" }
+                  ]
+            }
+          />
+        </div>
+      ) : null}
       <DashboardTabs view={view} canViewCompany={dashboard.user.role === "super_admin"} />
       {view === "team" ? (
         <TeamDashboardGrid dashboard={dashboard} />
@@ -285,10 +309,11 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 function Empty({ text, href }: { text: string; href: string }) {
   return (
-    <div className="rounded-md border border-dashed border-line bg-hover p-5 text-sm text-steel">
-      {text}
-      <a className="ml-3 font-semibold text-primary underline" href={href}>快速进入</a>
-    </div>
+    <EmptyGuidanceCard
+      title={text}
+      description="补齐对应页面的数据后，这个象限会自动恢复展示。"
+      actions={[{ href, label: "快速进入" }]}
+    />
   );
 }
 

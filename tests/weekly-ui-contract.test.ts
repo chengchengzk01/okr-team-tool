@@ -8,6 +8,8 @@ describe("weekly UI contract", () => {
 
     expect(pageSource).toContain("listWeeklyObstacles");
     expect(pageSource).toContain("本周障碍汇总");
-    expect(pageSource).toContain("本周暂无障碍上报");
+    expect(pageSource).toContain("本周还没有障碍上报");
+    expect(pageSource).toContain("你当前还没有可更新的 KR");
+    expect(pageSource).toContain("去补演示数据");
   });
 });

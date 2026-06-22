@@ -7,8 +7,10 @@ describe("reports UI contract", () => {
     const source = readFileSync(join(process.cwd(), "app/(app)/reports/page.tsx"), "utf8");
     const actionSource = readFileSync(join(process.cwd(), "components/report-export-action.tsx"), "utf8");
 
+    expect(source).toContain("当前范围还没有足够的报表数据");
     expect(source).toContain("当前范围暂无部门对比数据");
     expect(source).toContain("当前范围暂无健康指标季度走势");
+    expect(source).toContain("去补演示数据");
     expect(source).toContain("ReportScopeTabs");
     expect(source).toContain("requestedDepartmentId ? \"department\" : \"company\"");
     expect(actionSource).toContain("department_id");

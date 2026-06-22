@@ -1,5 +1,6 @@
 import { DemoDataBootstrapPanel } from "@/components/demo-data-bootstrap-panel";
 import { DepartmentManagementPanel } from "@/components/department-management-panel";
+import { EmptyGuidanceCard } from "@/components/empty-guidance-card";
 import { FeishuConfigForm } from "@/components/feishu-config-form";
 import { FeishuIntegrationActions } from "@/components/feishu-integration-actions";
 import { PageHeader } from "@/components/page-header";
@@ -75,6 +76,17 @@ export default async function SettingsPage() {
             </div>
           ))}
         </div>
+      </section>
+      <section className="mb-4">
+        <EmptyGuidanceCard
+          title="首次使用建议顺序"
+          description="如果这是你第一次把系统跑起来，建议先创建季度，再完成组织同步，然后补一套最小演示数据，最后回到看板、周仪式和报表页做验收。"
+          actions={[
+            { href: "/quarters", label: "先看季度" },
+            { href: "/dashboard", label: "回到看板", tone: "secondary" }
+          ]}
+          tip="当前设置页已经集中了真实飞书配置、演示数据、部门管理、用户管理和导出日志，适合作为首用引导中心。"
+        />
       </section>
       <FeishuConfigForm
         initialConfig={{

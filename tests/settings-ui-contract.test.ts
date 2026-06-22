@@ -11,6 +11,7 @@ describe("settings UI contract", () => {
 
     expect(pageSource).toContain("最近集成任务");
     expect(pageSource).toContain("页面回归建议顺序");
+    expect(pageSource).toContain("首次使用建议顺序");
     expect(pageSource).toContain("UserManagementPanel");
     expect(pageSource).toContain("DepartmentManagementPanel");
     expect(pageSource).toContain("DemoDataBootstrapPanel");

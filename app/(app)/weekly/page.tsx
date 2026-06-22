@@ -1,3 +1,4 @@
+import { EmptyGuidanceCard } from "@/components/empty-guidance-card";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/lib/auth";
 import { repository } from "@/lib/data/repository";
@@ -24,6 +25,27 @@ export default async function WeeklyPage() {
   return (
     <>
       <PageHeader title="周仪式入口" eyebrow={`${dashboard.quarter.name} · 第 ${dashboard.weekNumber} 周`} />
+      {!keyResults.length ? (
+        <div className="mb-4">
+          <EmptyGuidanceCard
+            title="你当前还没有可更新的 KR"
+            description={
+              fullUser.role === "super_admin"
+                ? "周仪式页已经可用，但当前账号还没有挂到任何 KR，所以信心值区会是空的。你可以先补一套演示数据，或先去 OKR 页创建 Objective 与 KR。"
+                : "周仪式页已经可用，但当前账号还没有分配到 KR，所以暂时无法更新信心值。可以先去 OKR 页补个人 OKR，或联系管理员补演示数据。"
+            }
+            actions={
+              fullUser.role === "super_admin"
+                ? [
+                    { href: "/settings", label: "去补演示数据" },
+                    { href: "/okr", label: "去创建 OKR", tone: "secondary" }
+                  ]
+                : [{ href: "/okr", label: "去查看 OKR" }]
+            }
+            tip="即使还没有 KR，你仍然可以先填写周一承诺和周五庆祝，后续再补信心值链路。"
+          />
+        </div>
+      ) : null}
       <WeeklyRitualForms
         quarterId={dashboard.quarter.id}
         weekNumber={dashboard.weekNumber}
@@ -51,7 +73,16 @@ export default async function WeeklyPage() {
               ))}
             </div>
           ) : (
-            <div className="px-5 py-6 text-sm text-steel">本周暂无障碍上报。</div>
+            <div className="px-5 py-6">
+              <EmptyGuidanceCard
+                title="本周还没有障碍上报"
+                description="这通常表示当前可见成员还没有在周五庆祝里填写障碍，或本周还没开始录入周仪式。"
+                actions={[
+                  { href: "/weekly", label: "继续填写本周仪式" },
+                  ...(fullUser.role === "super_admin" ? [{ href: "/settings", label: "先补演示数据", tone: "secondary" as const }] : [])
+                ]}
+              />
+            </div>
           )}
         </section>
       ) : null}

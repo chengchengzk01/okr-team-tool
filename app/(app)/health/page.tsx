@@ -1,3 +1,4 @@
+import { EmptyGuidanceCard } from "@/components/empty-guidance-card";
 import { HealthMetricCreateForm } from "@/components/health-metric-create-form";
 import { HealthMetricRecordForm } from "@/components/health-metric-record-form";
 import { PageHeader } from "@/components/page-header";
@@ -21,6 +22,24 @@ export default async function HealthPage() {
     <>
       <PageHeader title="健康指标" eyebrow="不要为了 OKR 放弃的底线" />
       <div className="space-y-6">
+        {!metrics.length ? (
+          <EmptyGuidanceCard
+            title="当前还没有健康指标"
+            description={
+              fullUser.role === "super_admin" || fullUser.role === "dept_manager"
+                ? "健康指标用于约束团队不要为了追 OKR 牺牲底线。你可以先创建一个部门级或公司级健康指标，或者先补一套演示数据快速查看页面结构。"
+                : "当前还没有分配给你可见的健康指标。管理员补齐健康指标后，你就能在这里更新数值和查看历史。"
+            }
+            actions={
+              fullUser.role === "super_admin" || fullUser.role === "dept_manager"
+                ? [
+                    { href: "/settings", label: "去补演示数据" },
+                    { href: "/okr", label: "先看 OKR", tone: "secondary" }
+                  ]
+                : [{ href: "/weekly", label: "先去周仪式页" }]
+            }
+          />
+        ) : null}
         <HealthMetricCreateForm
           canCreate={fullUser.role !== "member"}
           role={fullUser.role}
@@ -83,7 +102,20 @@ function MetricGroup({ title, metrics, userId, userRole, userDepartmentId, users
           })}
         </div>
       ) : (
-        <div className="px-6 py-8 text-sm text-muted">还没有健康指标，添加一个团队不愿放弃的底线指标。</div>
+        <div className="px-6 py-6">
+          <EmptyGuidanceCard
+            title={`${title}暂时为空`}
+            description="这个分组下还没有可见指标。你可以先创建一条新的健康指标，或补齐演示数据快速生成首条样例。"
+            actions={
+              userRole === "super_admin" || userRole === "dept_manager"
+                ? [
+                    ...(userRole === "super_admin" ? [{ href: "/settings", label: "去补演示数据" as const }] : []),
+                    { href: "/health", label: "留在本页创建指标", tone: "secondary" }
+                  ]
+                : [{ href: "/weekly", label: "先去周仪式页" }]
+            }
+          />
+        </div>
       )}
     </section>
   );

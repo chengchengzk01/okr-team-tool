@@ -1,3 +1,4 @@
+import { EmptyGuidanceCard } from "@/components/empty-guidance-card";
 import { OkrAuthoringForms } from "@/components/okr-authoring-forms";
 import { PageHeader } from "@/components/page-header";
 import { OkrTree } from "@/components/okr-tree";
@@ -42,7 +43,24 @@ export default async function OkrPage({
       {nodes.length ? (
         <OkrTree nodes={nodes} />
       ) : (
-        <div className="rounded-lg border border-dashed border-line bg-card p-8 text-sm text-steel">没有找到匹配的 OKR。</div>
+        <EmptyGuidanceCard
+          title="当前季度还没有可展示的 OKR"
+          description={
+            query || departmentId !== "all"
+              ? "当前筛选条件下没有找到匹配的 OKR。你可以先清空筛选，或先补一套演示数据查看完整结构。"
+              : "当前季度还没有录入 OKR。你可以先创建一套演示数据，或直接从公司级 / 部门级 / 个人级 Objective 开始录入。"
+          }
+          actions={[
+            ...(query || departmentId !== "all" ? [{ href: "/okr", label: "清空筛选", tone: "secondary" as const }] : []),
+            ...(user?.role === "super_admin"
+              ? [
+                  { href: "/settings", label: "去补演示数据" },
+                  { href: "/quarters", label: "查看季度设置", tone: "secondary" as const }
+                ]
+              : [{ href: "/weekly", label: "先去周仪式页", tone: "secondary" as const }])
+          ]}
+          tip="如果你刚刚补了演示数据，刷新本页后就能看到公司、部门和个人三级 OKR 结构。"
+        />
       )}
     </>
   );

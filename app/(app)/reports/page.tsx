@@ -1,3 +1,4 @@
+import { EmptyGuidanceCard } from "@/components/empty-guidance-card";
 import { PageHeader } from "@/components/page-header";
 import { ReportExportAction } from "@/components/report-export-action";
 import { StatusPill } from "@/components/status-pill";
@@ -42,6 +43,29 @@ export default async function ReportsPage({
         departments={departments}
         selectedDepartmentId={requestedDepartmentId}
       />
+      {!report.confidenceAlerts.length && !report.confidenceTrends.length && !report.departmentSummaries.length && !report.healthTrends.length ? (
+        <div className="mb-4">
+          <EmptyGuidanceCard
+            title="当前范围还没有足够的报表数据"
+            description={
+              user.role === "super_admin"
+                ? "统计报表依赖 OKR、信心值、周仪式和健康指标数据。你可以先补一套演示数据，快速生成趋势、部门对比和健康走势。"
+                : "统计报表依赖本范围内的 OKR、信心值、周仪式和健康指标。你可以先补个人或本部门数据，再回到这里查看趋势。"
+            }
+            actions={
+              user.role === "super_admin"
+                ? [
+                    { href: "/settings", label: "去补演示数据" },
+                    { href: "/weekly", label: "先填周仪式", tone: "secondary" }
+                  ]
+                : [
+                    { href: "/weekly", label: "先填周仪式" },
+                    { href: "/health", label: "查看健康指标", tone: "secondary" }
+                  ]
+            }
+          />
+        </div>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="KR 平均完成率" value={formatPercent(currentSummary?.averageKrCompletionRate)} />
@@ -116,7 +140,16 @@ export default async function ReportsPage({
                 </div>
               </div>
             )) : (
-              <div className="p-4 text-sm text-steel">当前没有信心值趋势预警。</div>
+              <div className="p-4">
+                <EmptyGuidanceCard
+                  title="当前没有信心值趋势预警"
+                  description="这通常表示当前范围内还没有足够的 KR 信心值记录，或者现有数据暂时没有触发风险条件。"
+                  actions={[
+                    { href: "/weekly", label: "去更新信心值" },
+                    ...(user.role === "super_admin" ? [{ href: "/settings", label: "去补演示数据", tone: "secondary" as const }] : [])
+                  ]}
+                />
+              </div>
             )}
           </div>
         </section>
@@ -127,7 +160,14 @@ export default async function ReportsPage({
             {report.confidenceTrends.length ? report.confidenceTrends.map((trend) => (
               <ConfidenceTrendRow key={trend.keyResultId} trend={trend} />
             )) : (
-              <div className="text-sm text-steel">暂无信心值历史记录。</div>
+              <EmptyGuidanceCard
+                title="暂无信心值历史记录"
+                description="信心值趋势会在成员开始按周更新 KR 后逐步形成。"
+                actions={[
+                  { href: "/weekly", label: "去更新本周信心值" },
+                  ...(user.role === "super_admin" ? [{ href: "/settings", label: "去补演示数据", tone: "secondary" as const }] : [])
+                ]}
+              />
             )}
           </div>
         </section>
@@ -151,7 +191,14 @@ export default async function ReportsPage({
                 </div>
               </div>
             )) : (
-              <div className="text-sm text-steel">当前范围暂无部门对比数据。</div>
+              <EmptyGuidanceCard
+                title="当前范围暂无部门对比数据"
+                description="部门对比需要当前范围内存在部门级或个人级 OKR，并积累一些周仪式和信心值数据。"
+                actions={[
+                  ...(user.role === "super_admin" ? [{ href: "/settings", label: "去补演示数据" as const }] : []),
+                  { href: "/okr", label: "去查看 OKR", tone: "secondary" }
+                ]}
+              />
             )}
           </div>
         </section>
@@ -176,7 +223,14 @@ export default async function ReportsPage({
               </div>
             </div>
           )) : (
-            <div className="text-sm text-steel">当前范围暂无健康指标季度走势。</div>
+            <EmptyGuidanceCard
+              title="当前范围暂无健康指标季度走势"
+              description="健康走势需要至少一条健康指标，以及后续持续录入的记录。"
+              actions={[
+                { href: "/health", label: "去补健康指标" },
+                ...(user.role === "super_admin" ? [{ href: "/settings", label: "去补演示数据", tone: "secondary" as const }] : [])
+              ]}
+            />
           )}
         </div>
       </section>
