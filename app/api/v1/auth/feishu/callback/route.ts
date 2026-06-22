@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { setSessionCookie } from "@/lib/auth";
+import { resolveAppUrl } from "@/lib/app-url";
 import { getFeishuRuntimeConfig } from "@/lib/integrations/feishu-config";
 import { feishuProvider } from "@/lib/integrations/feishu";
 import { consumeOAuthState } from "@/lib/oauth-state";
@@ -19,11 +20,11 @@ export async function GET(request: Request) {
     const user = await feishuProvider.exchangeCodeForUser(code);
     const token = await setSessionCookie(user);
     if (wantsJsonResponse(request, url)) return NextResponse.json({ token, user });
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(resolveAppUrl("/dashboard"));
   } catch (error) {
     const message = error instanceof Error ? error.message : "飞书回调失败";
     if (wantsJsonResponse(request, url)) return NextResponse.json({ error: message }, { status: statusForAuthCallbackFailure(message) });
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(message)}`, request.url));
+    return NextResponse.redirect(resolveAppUrl(`/login?error=${encodeURIComponent(message)}`));
   }
 }
 
@@ -35,7 +36,7 @@ function authCallbackError(request: Request, url: URL, message: string, status: 
   if (wantsJsonResponse(request, url)) {
     return NextResponse.json({ error: message }, { status });
   }
-  return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(message)}`, request.url));
+  return NextResponse.redirect(resolveAppUrl(`/login?error=${encodeURIComponent(message)}`));
 }
 
 function statusForAuthCallbackFailure(message: string) {

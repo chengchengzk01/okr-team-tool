@@ -1,4 +1,5 @@
 import type { Department, ExportLog, User } from "@/lib/domain/types";
+import { getConfiguredAppUrl } from "@/lib/app-url";
 import { prismaQueries } from "@/lib/data/prisma-queries";
 import { repository } from "@/lib/data/repository";
 import { prisma } from "@/lib/prisma";
@@ -166,10 +167,11 @@ export class RealFeishuProvider extends MockFeishuProvider {
   }
 
   async exchangeCodeForUser(code: string): Promise<User> {
+    const appAccessToken = await this.getTenantAccessToken();
     const tokenData = await this.postFeishu<{ access_token?: string; data?: { access_token?: string } }>(
       "/open-apis/authen/v1/oidc/access_token",
       { grant_type: "authorization_code", code },
-      { basicAuth: true }
+      { accessToken: appAccessToken }
     );
     const userAccessToken = tokenData.data?.access_token ?? tokenData.access_token;
     if (!userAccessToken) throw new Error("飞书 OAuth 未返回 user_access_token");
@@ -760,7 +762,7 @@ function firstWeekdayTimestamp(startDate: Date, weekday: string, hour: number, m
 }
 
 function getAppUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return getConfiguredAppUrl();
 }
 
 async function buildBitablePayloads(quarterId: string) {

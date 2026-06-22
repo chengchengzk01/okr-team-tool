@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { getConfiguredAppUrl } from "@/lib/app-url";
 
 const cookieName = "okr_feishu_oauth_state";
 const ttlSeconds = 5 * 60;
@@ -24,5 +25,5 @@ export async function consumeOAuthState(receivedState: string | null) {
 }
 
 function getAppUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return getConfiguredAppUrl();
 }

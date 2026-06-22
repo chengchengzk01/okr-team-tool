@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies, headers } from "next/headers";
+import { getConfiguredAppUrl } from "@/lib/app-url";
 import type { Role, User } from "@/lib/domain/types";
 import { repository } from "@/lib/data/repository";
 import { prismaQueries } from "@/lib/data/prisma-queries";
@@ -95,7 +96,7 @@ function getJwtSecret() {
 }
 
 function getAppUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return getConfiguredAppUrl();
 }
 
 async function loadSessionUser(userId: string, sessionSource: SessionSource = "feishu") {

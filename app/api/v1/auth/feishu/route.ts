@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveAppUrl } from "@/lib/app-url";
 import { feishuProvider } from "@/lib/integrations/feishu";
 import { createOAuthState } from "@/lib/oauth-state";
 
@@ -6,13 +7,13 @@ export async function GET(request: Request) {
   try {
     const state = await createOAuthState();
     const authUrl = await feishuProvider.getAuthUrl(state);
-    return NextResponse.redirect(authUrl.startsWith("/") ? new URL(authUrl, request.url) : authUrl);
+    return NextResponse.redirect(authUrl.startsWith("/") ? resolveAppUrl(authUrl) : authUrl);
   } catch (error) {
     const message = error instanceof Error ? error.message : "飞书授权初始化失败";
     if (wantsJsonResponse(request)) {
       return NextResponse.json({ error: message }, { status: statusForAuthInitFailure(message) });
     }
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(message)}`, request.url));
+    return NextResponse.redirect(resolveAppUrl(`/login?error=${encodeURIComponent(message)}`));
   }
 }
 
