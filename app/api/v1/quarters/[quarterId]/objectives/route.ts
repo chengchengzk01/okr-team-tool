@@ -25,13 +25,14 @@ export async function POST(request: Request, context: { params: Promise<{ quarte
   try {
     const { quarterId } = await context.params;
     const body = normalizeObjectiveCreateBody(await request.json());
-    const quarter = ((await prismaQueries.listQuarters()) ?? repository.listQuarters()).find((item) => item.id === quarterId);
+    const snapshot = (await prismaQueries.getRepositorySnapshot()) ?? repository;
+    const quarter = snapshot.listQuarters().find((item) => item.id === quarterId);
     if (!quarter) return NextResponse.json({ error: "季度不存在" }, { status: 404 });
     assertOkrCreationOpenForRole(quarter.status, user.role);
     assertObjectiveCreateBody(body);
     const permissionError = validateObjectiveCreatePermission(user, body);
     if (permissionError) return NextResponse.json({ error: permissionError }, { status: 403 });
-    const objective = repository.createObjective(
+    const objective = snapshot.createObjective(
       {
         quarterId,
         level: body.level,

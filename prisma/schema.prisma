@@ -162,7 +162,6 @@ model Objective {
   keyResults   KeyResult[]
   childAlignments OKRAlignment[] @relation("ChildObjective")
 
-  @@unique([ownerId, quarterId, level])
   @@map("objectives")
 }
 

@@ -139,6 +139,15 @@ describe("API authentication contract", () => {
     expect(alignedObjectivesRoute).toContain("snapshot.listAlignedObjectives");
   });
 
+  test("objective creation uses the production database snapshot and permits repeated levels", () => {
+    const objectiveCreateRoute = readFileSync(join(process.cwd(), "app/api/v1/quarters/[quarterId]/objectives/route.ts"), "utf8");
+    const schema = readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8");
+
+    expect(objectiveCreateRoute).toContain("const snapshot = (await prismaQueries.getRepositorySnapshot()) ?? repository;");
+    expect(objectiveCreateRoute).toContain("snapshot.createObjective(");
+    expect(schema).not.toContain("@@unique([ownerId, quarterId, level])");
+  });
+
   test("objective and key result updates lock non-admin edits after planning", () => {
     const objectiveRoute = readFileSync(join(process.cwd(), "app/api/v1/objectives/[id]/route.ts"), "utf8");
     const keyResultRoute = readFileSync(join(process.cwd(), "app/api/v1/key-results/[id]/route.ts"), "utf8");
