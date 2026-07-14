@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { prismaQueries } from "@/lib/data/prisma-queries";
 import { repository } from "@/lib/data/repository";
 import { assertOkrCreationOpenForRole } from "@/lib/domain/rules";
 import { normalizeKeyResultCreateBody } from "@/lib/api/request-normalizers";
@@ -11,15 +12,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   try {
     const { id } = await context.params;
     const body = normalizeKeyResultCreateBody(await request.json());
-    const objective = repository.getObjective(id);
+    const snapshot = (await prismaQueries.getRepositorySnapshot()) ?? repository;
+    const objective = snapshot.getObjective(id);
     if (!objective) throw new Error("Objective 不存在");
-    const quarter = repository.listQuarters().find((item) => item.id === objective.quarterId);
+    const quarter = snapshot.listQuarters().find((item) => item.id === objective.quarterId);
     if (!quarter) throw new Error("季度不存在");
     assertOkrCreationOpenForRole(quarter.status, user.role);
     const permissionError = validateKeyResultCreatePermission(user, objective);
     if (permissionError) return NextResponse.json({ error: permissionError }, { status: 403 });
     assertKeyResultCreateBody(body);
-    const keyResult = repository.createKeyResult({
+    const keyResult = snapshot.createKeyResult({
       objectiveId: id,
       description: body.description,
       startValue: Number(body.startValue),

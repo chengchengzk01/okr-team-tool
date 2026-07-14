@@ -148,6 +148,15 @@ describe("API authentication contract", () => {
     expect(schema).not.toContain("@@unique([ownerId, quarterId, level])");
   });
 
+  test("key result creation uses the same production snapshot as its objective", () => {
+    const keyResultCreateRoute = readFileSync(join(process.cwd(), "app/api/v1/objectives/[id]/key-results/route.ts"), "utf8");
+
+    expect(keyResultCreateRoute).toContain('import { prismaQueries } from "@/lib/data/prisma-queries"');
+    expect(keyResultCreateRoute).toContain("const snapshot = (await prismaQueries.getRepositorySnapshot()) ?? repository;");
+    expect(keyResultCreateRoute).toContain("const objective = snapshot.getObjective(id);");
+    expect(keyResultCreateRoute).toContain("const keyResult = snapshot.createKeyResult({");
+  });
+
   test("objective and key result updates lock non-admin edits after planning", () => {
     const objectiveRoute = readFileSync(join(process.cwd(), "app/api/v1/objectives/[id]/route.ts"), "utf8");
     const keyResultRoute = readFileSync(join(process.cwd(), "app/api/v1/key-results/[id]/route.ts"), "utf8");
