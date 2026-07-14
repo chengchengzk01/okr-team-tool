@@ -50,18 +50,20 @@ describe("OKR authoring", () => {
     expect(second.sortOrder).toBe(2);
   });
 
-  test("prevents duplicate objectives for the same owner, quarter, and level", () => {
+  test("allows multiple objectives for the same owner, quarter, and level", () => {
     const repository = createRepository(createSeedState());
 
-    expect(() =>
-      repository.createObjective({
+    const objective = repository.createObjective({
         quarterId: "q-2026-q2",
         level: "individual",
         departmentId: "dept-product",
         ownerId: "u-member",
         title: "重复个人 Objective"
-      })
-    ).toThrow("本季度该层级 Objective 已存在");
+      },
+      ["kr-product-1"]
+    );
+
+    expect(repository.listObjectives("q-2026-q2").some((item) => item.id === objective.id)).toBe(true);
   });
 
   test("requires parent KR alignment for department and individual objectives", () => {

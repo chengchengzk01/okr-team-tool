@@ -151,11 +151,6 @@ class InMemoryRepository {
   createObjective(input: Omit<Objective, "id">, parentKeyResultIds: string[] = []) {
     assertQuarterWritable(this.getQuarter(input.quarterId).status);
     if (input.title.length > 50) throw new Error("Objective 文本不超过 50 字");
-    const exists = this.state.objectives.some(
-      (objective) =>
-        objective.ownerId === input.ownerId && objective.quarterId === input.quarterId && objective.level === input.level
-    );
-    if (exists) throw new Error("本季度该层级 Objective 已存在");
     assertRequiredObjectiveAlignment(input.level, parentKeyResultIds.length);
     assertAlignmentLimit(parentKeyResultIds.length);
 

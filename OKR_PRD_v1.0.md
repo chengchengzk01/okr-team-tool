@@ -403,7 +403,7 @@
 
 #### 功能说明
 
-三层级 OKR 创建与对齐，包含公司级、部门级、个人级。每层级每季度只允许一个 Objective，每个 Objective 最多 5 个 KR。
+三层级 OKR 创建与对齐，包含公司级、部门级、个人级。每个 Objective 最多 5 个 KR。
 
 #### 季度管理
 
@@ -417,7 +417,7 @@
 
 字段说明见 [5.4 Objective](#54-objective目标)。
 
-规则：同一 owner + 季度 + 层级组合下只能有一个 Objective；Objective 文本不超过 50 字，须为定性描述。
+规则：同一 owner 在同一季度和层级下可创建多个 Objective；Objective 文本不超过 50 字，须为定性描述。
 
 #### 创建 Key Result
 
@@ -436,7 +436,7 @@
 #### 验收标准（AC）
 
 - [ ] Super Admin 可创建公司级 Objective；Dept Manager 可创建部门级 Objective；Member 可创建个人 Objective
-- [ ] 同一 owner + 季度 + 层级已存在 Objective 时，新建请求返回错误提示「本季度该层级 Objective 已存在」
+- [ ] 同一 owner + 季度 + 层级下允许连续创建多个 Objective，并都能显示在 OKR 树状视图中
 - [ ] Objective 文本超过 50 字时，前端阻止提交并提示字数限制
 - [ ] 同一 Objective 下第 6 个 KR 创建请求被拒绝，提示「每个 Objective 最多 5 个关键结果」
 - [ ] 部门级 Objective 创建时，对齐上级 KR 为必选项，未选时无法提交
